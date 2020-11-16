@@ -54,11 +54,13 @@ class Session {
     Session({
       this.name,
       this.date,
+      this.dur,
       // this.hasVideo = false,
     });
 
     String name;
     DateTime date;
+    Duration dur;
     // bool hasVideo;
   }
 
@@ -67,16 +69,21 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Session> _sessions = <Session>[Session(name: "Sweet gainz", date: new DateTime.utc(2020, 10, 18)),
                                       Session(name: "Pumpin' Uranium", date: new DateTime.utc(2020, 9, 22)),
                                       Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2))];
+  List<String> _tags = <String>["fitness"];
 
   // Text editing controllers for all text fields
   TextEditingController _nameController;
+  TextEditingController _tagController;
   TextEditingController _dateController;
   TextEditingController _hourController;
   TextEditingController _minuteController;
 
+  FocusNode equipFocusNode;
+
   void initState() {
     super.initState();
     _nameController = TextEditingController();
+    _tagController = TextEditingController();
     _dateController = TextEditingController();
     _hourController = TextEditingController();
     _minuteController = TextEditingController();
@@ -84,111 +91,176 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void dispose() {
     _nameController.dispose();
+    _tagController.dispose();
     _dateController.dispose();
     _hourController.dispose();
     _minuteController.dispose();
     super.dispose();
   }
+  
+  List<Widget> _chipList = <Widget>[Chip(label: Text("fitness"))];
+  // List<Widget> buildChips() {
+  //   List<Widget> chips = new List();
+  //   for (var i = 0; i < _tags.length; i++) {
+  //     chips.add(
+  //       Chip(
+  //         label: Text(_tags[i]),
+  //       )
+  //     );
+  //   }
+  //   return chips;
+  // }
+  // List<Widget> _chipList = new List();
+  // _chipList = buildChips();
 
   // Callback for "plus" button
   void _addSession() async {
-    Session newSession = new Session();
+    Session newSession = new Session(name:null, date: new DateTime.now());
     final _formKey = GlobalKey<FormState>();
     final _formKey2 = GlobalKey<FormState>();
     
     await showDialog(
     context: context,
     builder: (BuildContext context) {
-      return SimpleDialog(
-        title: const Text('Select assignment'),
-        children: <Widget>[
-          InputDatePickerFormField (
-            firstDate: new DateTime(0),
-            lastDate: new DateTime.now(),
-            initialDate: new DateTime.now(),
-            onDateSubmitted: (date) {
-              newSession.date = date;
-            }
-          ),
-          Form(
-            key: _formKey2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                TextFormField(
-                  controller: _hourController,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter hours',
-                  ),
-                  // initialValue: '0',
-                  validator: (value) {
-                    if (value.isEmpty) {
-                      return null;
-                    }
-                    else if(int.parse(value) == null) {
-                      return 'Must be a number';
-                    }
-                    return null;
-                  },
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return SimpleDialog(
+            title: const Text('Select assignment'),
+            children: <Widget>[
+              
+              // CupertinoTimerPicker (
+              //   key: _formKey2,
+              //   onTimerDurationChanged: (valuechanged) {
+              //     newSession.dur = valuechanged;
+              //   },
+              // ),
+              Form(
+                key: _formKey2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    InputDatePickerFormField (
+                      firstDate: new DateTime(0),
+                      lastDate: new DateTime.now(),
+                      initialDate: new DateTime.now(),
+                      onDateSubmitted: (date) {
+                        newSession.date = date;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _hourController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter hours',
+                      ),
+                      // initialValue: '0',
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return null;
+                        }
+                        else if(int.parse(value) == null) {
+                          return 'Must be a number';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _minuteController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter minutes',
+                      ),
+                      // initialValue: '10',
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return null;
+                        }
+                        else if(int.parse(value) == null) {
+                          return 'Must be a number';
+                        }
+                        else if(int.parse(value) > 59) {
+                          return 'Minutes cannot be more than 60';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                TextFormField(
-                  controller: _minuteController,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter minutes',
-                  ),
-                  // initialValue: '10',
-                  validator: (value) {
-                    if (value.isEmpty) {
-                      return null;
-                    }
-                    else if(int.parse(value) == null) {
-                      return 'Must be a number';
-                    }
-                    else if(int.parse(value) > 59) {
-                      return 'Minutes cannot be more than 60';
-                    }
-                    return null;
-                  },
+              ),
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter optional session name',
+                      ),
+                    ),                
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter session name',
+              ),
+              TextField(
+                controller: _tagController,
+                focusNode: equipFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Enter Equipment',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _chipList.add(
+                          Chip(
+                            label: Text(_tagController.text),
+                          )
+                        );
+                      });
+                      _tagController.clear();
+                      equipFocusNode.requestFocus();
+                    },
+                    icon: Icon(Icons.add_circle_outlined),
                   ),
-                  validator: (value) {
-                    if (value.isEmpty) {
-                      return 'Please enter some text';
+                ),
+                onEditingComplete: () {
+                  setState(() {
+                    _chipList.add(
+                      Chip(
+                        label: Text(_tagController.text),
+                      )
+                    );
+                  });
+                  _tagController.clear();
+                  equipFocusNode.requestFocus();
+                },
+              ),
+              Wrap(
+                spacing: 4.0, // gap between adjacent chips
+                runSpacing: 2.0, // gap between lines
+                children:_chipList,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Validate will return true if the form is valid, or false if
+                    // the form is invalid.
+                    if (_formKey.currentState.validate()) {
+                      String session_name;
+                      if (_nameController.text.isEmpty) {
+                        session_name = "Fitness Session";
+                      }
+                      else {
+                        session_name = _nameController.text;
+                      }
+                      _sessions.insert(0,Session(name: session_name, date: newSession.date));
+                      Navigator.pop(context);
                     }
-                    return null;
                   },
-                ),                
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: ElevatedButton(
-              onPressed: () {
-                // Validate will return true if the form is valid, or false if
-                // the form is invalid.
-                if (_formKey.currentState.validate()) {
-                  _sessions.insert(0,Session(name: _nameController.text, date: new DateTime.now()));
-                  Navigator.pop(context);
-                }
-              },
-              child: Text('Submit'),
-            ),
-          ),
-        ],
+                  child: Text('Submit'),
+                ),
+              ),
+            ],
+          );
+        },
       );
       
     });
