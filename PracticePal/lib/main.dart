@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/cupertino.dart';
 
 void main() {
   runApp(MyApp());
@@ -55,35 +56,42 @@ class Session {
       this.name,
       this.date,
       this.dur,
+      this.equipment,
+      this.sets,
       // this.hasVideo = false,
     });
 
     String name;
     DateTime date;
     Duration dur;
+    List<String> equipment;
+    List<String> sets;
     // bool hasVideo;
   }
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<Session> _sessions = <Session>[Session(name: "Sweet gainz", date: new DateTime.utc(2020, 10, 18)),
-                                      Session(name: "Pumpin' Uranium", date: new DateTime.utc(2020, 9, 22)),
-                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2))];
+  List<Session> _sessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
   List<String> _tags = <String>["fitness"];
 
   // Text editing controllers for all text fields
   TextEditingController _nameController;
-  TextEditingController _tagController;
+  TextEditingController _equipTagController;
+  TextEditingController _setTagController;
   TextEditingController _dateController;
   TextEditingController _hourController;
   TextEditingController _minuteController;
 
   FocusNode equipFocusNode;
+  FocusNode setFocusNode;
 
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _tagController = TextEditingController();
+    _equipTagController = TextEditingController();
+    _setTagController = TextEditingController();
     _dateController = TextEditingController();
     _hourController = TextEditingController();
     _minuteController = TextEditingController();
@@ -91,33 +99,47 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void dispose() {
     _nameController.dispose();
-    _tagController.dispose();
+    _equipTagController.dispose();
+    _setTagController.dispose();
     _dateController.dispose();
     _hourController.dispose();
     _minuteController.dispose();
     super.dispose();
   }
+
+  String _printDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    return "${twoDigits(duration.inHours)} hrs $twoDigitMinutes min";
+  }
   
   List<Widget> _chipList = <Widget>[Chip(label: Text("fitness"))];
-  // List<Widget> buildChips() {
-  //   List<Widget> chips = new List();
-  //   for (var i = 0; i < _tags.length; i++) {
-  //     chips.add(
-  //       Chip(
-  //         label: Text(_tags[i]),
-  //       )
-  //     );
-  //   }
-  //   return chips;
-  // }
-  // List<Widget> _chipList = new List();
-  // _chipList = buildChips();
+
+  List<Widget> buildChips(tags) {
+    List<Widget> chips = new List();
+    for (var i = 0; i < tags.length; i++) {
+      Chip tagChip = Chip(
+        label: Text(tags[i]),
+        onDeleted: () {
+          tags.removeAt(i);
+          setState(() {
+            tags = tags;
+          });
+        },
+      );
+      chips.add(tagChip);
+    }
+    return chips;
+  }
+
+  
 
   // Callback for "plus" button
   void _addSession() async {
-    Session newSession = new Session(name:null, date: new DateTime.now());
+    Session newSession = new Session(name:null, date: new DateTime.now(), equipment: _tags, sets: List<String>(), dur: Duration(minutes: 10));
     final _formKey = GlobalKey<FormState>();
     final _formKey2 = GlobalKey<FormState>();
+    final _formKey3 = GlobalKey<FormState>();
     
     await showDialog(
     context: context,
@@ -125,15 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
       return StatefulBuilder(
         builder: (context, setState) {
           return SimpleDialog(
-            title: const Text('Select assignment'),
+            title: const Text('Enter Session Details'),
+
             children: <Widget>[
-              
-              // CupertinoTimerPicker (
-              //   key: _formKey2,
-              //   onTimerDurationChanged: (valuechanged) {
-              //     newSession.dur = valuechanged;
-              //   },
-              // ),
               Form(
                 key: _formKey2,
                 child: Column(
@@ -147,43 +163,52 @@ class _MyHomePageState extends State<MyHomePage> {
                         newSession.date = date;
                       },
                     ),
-                    TextFormField(
-                      controller: _hourController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter hours',
-                      ),
-                      // initialValue: '0',
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return null;
-                        }
-                        else if(int.parse(value) == null) {
-                          return 'Must be a number';
-                        }
-                        return null;
-                      },
-                    ),
-                    TextFormField(
-                      controller: _minuteController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter minutes',
-                      ),
-                      // initialValue: '10',
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return null;
-                        }
-                        else if(int.parse(value) == null) {
-                          return 'Must be a number';
-                        }
-                        else if(int.parse(value) > 59) {
-                          return 'Minutes cannot be more than 60';
-                        }
-                        return null;
-                      },
-                    ),
+                    // TextFormField(
+                    //   controller: _hourController,
+                    //   decoration: const InputDecoration(
+                    //     hintText: 'Enter hours',
+                    //   ),
+                    //   // initialValue: '0',
+                    //   validator: (value) {
+                    //     if (value.isEmpty) {
+                    //       return null;
+                    //     }
+                    //     else if(int.parse(value) == null) {
+                    //       return 'Must be a number';
+                    //     }
+                    //     return null;
+                    //   },
+                    // ),
+                    // TextFormField(
+                    //   controller: _minuteController,
+                    //   decoration: const InputDecoration(
+                    //     hintText: 'Enter minutes',
+                    //   ),
+                    //   // initialValue: '10',
+                    //   validator: (value) {
+                    //     if (value.isEmpty) {
+                    //       return null;
+                    //     }
+                    //     else if(int.parse(value) == null) {
+                    //       return 'Must be a number';
+                    //     }
+                    //     else if(int.parse(value) > 59) {
+                    //       return 'Minutes cannot be more than 60';
+                    //     }
+                    //     return null;
+                    //   },
+                    // ),
                   ],
                 ),
+              ),
+              CupertinoTimerPicker (
+                key: _formKey3,
+                mode: CupertinoTimerPickerMode.hm,
+                minuteInterval: 5,
+                initialTimerDuration: new Duration(minutes: 10),
+                onTimerDurationChanged: (valuechanged) {
+                  newSession.dur = valuechanged;
+                },
               ),
               Form(
                 key: _formKey,
@@ -200,21 +225,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
+
+              // Equipment tags
               TextField(
-                controller: _tagController,
+                controller: _equipTagController,
                 focusNode: equipFocusNode,
                 decoration: InputDecoration(
                   hintText: 'Enter Equipment',
                   suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
-                        _chipList.add(
-                          Chip(
-                            label: Text(_tagController.text),
-                          )
-                        );
+                         newSession.equipment.add(_equipTagController.text);
                       });
-                      _tagController.clear();
+                      _equipTagController.clear();
                       equipFocusNode.requestFocus();
                     },
                     icon: Icon(Icons.add_circle_outlined),
@@ -222,21 +245,52 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 onEditingComplete: () {
                   setState(() {
-                    _chipList.add(
-                      Chip(
-                        label: Text(_tagController.text),
-                      )
-                    );
+                    newSession.equipment.add(_equipTagController.text);
                   });
-                  _tagController.clear();
+                  _equipTagController.clear();
                   equipFocusNode.requestFocus();
                 },
               ),
               Wrap(
                 spacing: 4.0, // gap between adjacent chips
                 runSpacing: 2.0, // gap between lines
-                children:_chipList,
+                children: buildChips(newSession.equipment),
+                
               ),
+              
+              // Set tags
+              TextField(
+                controller: _setTagController,
+                focusNode: setFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Enter Sets',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                         newSession.sets.add(_setTagController.text);
+                      });
+                      _setTagController.clear();
+                      setFocusNode.requestFocus();
+                    },
+                    icon: Icon(Icons.add_circle_outlined),
+                  ),
+                ),
+                onEditingComplete: () {
+                  setState(() {
+                    newSession.sets.add(_setTagController.text);
+                  });
+                  _setTagController.clear();
+                  setFocusNode.requestFocus();
+                },
+              ),
+              Wrap(
+                spacing: 4.0, // gap between adjacent chips
+                runSpacing: 2.0, // gap between lines
+                children: buildChips(newSession.sets),
+                
+              ),
+
+
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
@@ -251,7 +305,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       else {
                         session_name = _nameController.text;
                       }
-                      _sessions.insert(0,Session(name: session_name, date: newSession.date));
+                      _sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
                       Navigator.pop(context);
                     }
                   },
@@ -300,6 +354,9 @@ class _MyHomePageState extends State<MyHomePage> {
               child: ListTile(
                 leading: FlutterLogo(),
                 title: Text(DateFormat("MM/dd/yyyy").format( _sessions[index].date) + " " + _sessions[index].name),
+                // subtitle: Text( DateFormat("HH:mm").format(DateTime(5, 5, 5).add(_sessions[index].dur))),
+                // _printDuration(_sessions[index].dur) + '\n' + 
+                subtitle: Text(_printDuration(_sessions[index].dur) + '\n' + "Equipment: " + _sessions[index].equipment.join(", ") + '\n' + "Sets: " + _sessions[index].sets.join(", ")),
                 trailing: Icon(Icons.more_vert),
               ),
             );
