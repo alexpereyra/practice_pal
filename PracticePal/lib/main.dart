@@ -71,6 +71,9 @@ class Session {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+
+  // initialize database
+  // make a copy in _filteredSessions because I'm bad at this
   List<Session> _sessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
                                       Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
                                       Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
@@ -118,9 +121,8 @@ class _MyHomePageState extends State<MyHomePage> {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     return "${twoDigits(duration.inHours)} hrs $twoDigitMinutes min";
   }
-  
-  List<Widget> _chipList = <Widget>[Chip(label: Text("fitness"))];
 
+  // Build the list tags using Chip widgets
   List<Widget> buildChips(tags) {
     List<Widget> chips = new List();
     for (var i = 0; i < tags.length; i++) {
@@ -138,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return chips;
   }
 
-  // search string list
+  // search a list of strings
   bool _listContains (searchString, listString) {
     bool matchflag = false;
 
@@ -166,57 +168,19 @@ class _MyHomePageState extends State<MyHomePage> {
             title: const Text('Enter Session Details'),
 
             children: <Widget>[
-              Form(
-                key: _formKey2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    InputDatePickerFormField (
-                      firstDate: new DateTime(0),
-                      lastDate: new DateTime.now(),
-                      initialDate: new DateTime.now(),
-                      onDateSubmitted: (date) {
-                        newSession.date = date;
-                      },
-                    ),
-                    // TextFormField(
-                    //   controller: _hourController,
-                    //   decoration: const InputDecoration(
-                    //     hintText: 'Enter hours',
-                    //   ),
-                    //   // initialValue: '0',
-                    //   validator: (value) {
-                    //     if (value.isEmpty) {
-                    //       return null;
-                    //     }
-                    //     else if(int.parse(value) == null) {
-                    //       return 'Must be a number';
-                    //     }
-                    //     return null;
-                    //   },
-                    // ),
-                    // TextFormField(
-                    //   controller: _minuteController,
-                    //   decoration: const InputDecoration(
-                    //     hintText: 'Enter minutes',
-                    //   ),
-                    //   // initialValue: '10',
-                    //   validator: (value) {
-                    //     if (value.isEmpty) {
-                    //       return null;
-                    //     }
-                    //     else if(int.parse(value) == null) {
-                    //       return 'Must be a number';
-                    //     }
-                    //     else if(int.parse(value) > 59) {
-                    //       return 'Minutes cannot be more than 60';
-                    //     }
-                    //     return null;
-                    //   },
-                    // ),
-                  ],
-                ),
+
+              // Date picker
+              // TODO: make this a pop-up or actually update on change
+              InputDatePickerFormField (
+                firstDate: new DateTime(0),
+                lastDate: new DateTime.now(),
+                initialDate: new DateTime.now(),
+                onDateSubmitted: (date) {
+                  newSession.date = date;
+                },
               ),
+
+              // Session duration
               CupertinoTimerPicker (
                 key: _formKey3,
                 mode: CupertinoTimerPickerMode.hm,
@@ -226,23 +190,16 @@ class _MyHomePageState extends State<MyHomePage> {
                   newSession.dur = valuechanged;
                 },
               ),
-              Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter optional session name',
-                      ),
-                    ),                
-                  ],
+
+              // Optional session name
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter optional session name',
                 ),
               ),
 
-              // Equipment tags
+              // Equipment tag text field
               TextField(
                 controller: _equipTagController,
                 focusNode: equipFocusNode,
@@ -267,6 +224,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   equipFocusNode.requestFocus();
                 },
               ),
+
+              // Equipment tag chip display
               Wrap(
                 spacing: 4.0, // gap between adjacent chips
                 runSpacing: 2.0, // gap between lines
@@ -274,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 
               ),
               
-              // Set tags
+              // Text field for sets
               TextField(
                 controller: _setTagController,
                 focusNode: setFocusNode,
@@ -299,6 +258,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   setFocusNode.requestFocus();
                 },
               ),
+
+              // Sets tag chip display
               Wrap(
                 spacing: 4.0, // gap between adjacent chips
                 runSpacing: 2.0, // gap between lines
@@ -306,26 +267,23 @@ class _MyHomePageState extends State<MyHomePage> {
                 
               ),
 
-
+              // Submit button
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
                   onPressed: () {
-                    // Validate will return true if the form is valid, or false if
-                    // the form is invalid.
-                    if (_formKey.currentState.validate()) {
-                      String session_name;
-                      if (_nameController.text.isEmpty) {
-                        session_name = "Fitness Session";
-                      }
-                      else {
-                        session_name = _nameController.text;
-                      }
-                      _sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
-                      _filteredSessions = _sessions;
-                      _searchController.clear();
-                      Navigator.pop(context);
+                    String session_name;
+                    if (_nameController.text.isEmpty) {
+                      session_name = "Fitness Session";
                     }
+                    else {
+                      session_name = _nameController.text;
+                    }
+                    // add session to datebase
+                    _sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
+                    _filteredSessions = _sessions;
+                    _searchController.clear();
+                    Navigator.pop(context);
                   },
                   child: Text('Submit'),
                 ),
@@ -369,12 +327,17 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.all(8),
           itemCount: _filteredSessions.length + 1,
           itemBuilder: (BuildContext context, int index) {
+
+            // Search bar
             if (index == 0) {
               return TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search',
                 ),
+
+                // When text changes, search in session names, equipment tags, and sets tags
+                // _sessions is entire database, _filteredSessions is whats filtered based on search
                 onChanged: (value) {
                   setState(() {
                     if (value.isEmpty) {
@@ -382,20 +345,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
                     else {
                       _filteredSessions = List.of(_sessions);
-                      //_filteredSessions.retainWhere((item) => (item.name.toLowerCase().contains(value.toLowerCase())));
                       _filteredSessions.retainWhere((item) => ((_listContains(value.toLowerCase() ,item.equipment) || _listContains(value.toLowerCase() ,item.sets) || (item.name.toLowerCase().contains(value.toLowerCase())) )));
                     }
                   });
                 },
               );
             }
+
+            // List of sessions as Cards, filtered based on Search
+            // [index -1] is because index 0 is the search bar (dumb way to build the widget list, oh well)
             else {
               return Card(
                 child: ListTile(
                   leading: FlutterLogo(),
                   title: Text(DateFormat("MM/dd/yyyy").format( _filteredSessions[index-1].date) + " " + _filteredSessions[index-1].name),
-                  // subtitle: Text( DateFormat("HH:mm").format(DateTime(5, 5, 5).add(_sessions[index].dur))),
-                  // _printDuration(_sessions[index].dur) + '\n' + 
                   subtitle: Text(_printDuration(_filteredSessions[index-1].dur) + '\n' + "Equipment: " + _filteredSessions[index-1].equipment.join(", ") + '\n' + "Sets: " + _filteredSessions[index-1].sets.join(", ")),
                   trailing: Icon(Icons.more_vert),
                 ),
@@ -406,7 +369,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addSession,
-        tooltip: 'Increment',
+        tooltip: 'Add Session',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
