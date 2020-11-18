@@ -71,15 +71,19 @@ class Session {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<Session> _sessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: List<String>(), sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
+  List<Session> _sessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
+  List<Session> _filteredSessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
+                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
   List<String> _tags = <String>["fitness"];
 
   // Text editing controllers for all text fields
   TextEditingController _nameController;
   TextEditingController _equipTagController;
   TextEditingController _setTagController;
+  TextEditingController _searchController;
   TextEditingController _dateController;
   TextEditingController _hourController;
   TextEditingController _minuteController;
@@ -92,6 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _nameController = TextEditingController();
     _equipTagController = TextEditingController();
     _setTagController = TextEditingController();
+    _searchController = TextEditingController();
     _dateController = TextEditingController();
     _hourController = TextEditingController();
     _minuteController = TextEditingController();
@@ -101,6 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _nameController.dispose();
     _equipTagController.dispose();
     _setTagController.dispose();
+    _searchController.dispose();
     _dateController.dispose();
     _hourController.dispose();
     _minuteController.dispose();
@@ -132,7 +138,17 @@ class _MyHomePageState extends State<MyHomePage> {
     return chips;
   }
 
-  
+  // search string list
+  bool _listContains (searchString, listString) {
+    bool matchflag = false;
+
+    for(var i=0;i<listString.length;i++) {
+      if (listString[i].toLowerCase().contains(searchString)) {
+        matchflag = true;
+      }
+    }
+    return matchflag;
+  }
 
   // Callback for "plus" button
   void _addSession() async {
@@ -306,6 +322,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         session_name = _nameController.text;
                       }
                       _sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
+                      _filteredSessions = _sessions;
+                      _searchController.clear();
                       Navigator.pop(context);
                     }
                   },
@@ -337,6 +355,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+    //_filteredSessions = _sessions;
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -348,70 +367,42 @@ class _MyHomePageState extends State<MyHomePage> {
         // in the middle of the parent.
         child: ListView.builder(
           padding: const EdgeInsets.all(8),
-          itemCount: _sessions.length,
+          itemCount: _filteredSessions.length + 1,
           itemBuilder: (BuildContext context, int index) {
-            return Card(
-              child: ListTile(
-                leading: FlutterLogo(),
-                title: Text(DateFormat("MM/dd/yyyy").format( _sessions[index].date) + " " + _sessions[index].name),
-                // subtitle: Text( DateFormat("HH:mm").format(DateTime(5, 5, 5).add(_sessions[index].dur))),
-                // _printDuration(_sessions[index].dur) + '\n' + 
-                subtitle: Text(_printDuration(_sessions[index].dur) + '\n' + "Equipment: " + _sessions[index].equipment.join(", ") + '\n' + "Sets: " + _sessions[index].sets.join(", ")),
-                trailing: Icon(Icons.more_vert),
-              ),
-            );
+            if (index == 0) {
+              return TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search',
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    if (value.isEmpty) {
+                      _filteredSessions = _sessions;
+                    }
+                    else {
+                      _filteredSessions = List.of(_sessions);
+                      //_filteredSessions.retainWhere((item) => (item.name.toLowerCase().contains(value.toLowerCase())));
+                      _filteredSessions.retainWhere((item) => ((_listContains(value.toLowerCase() ,item.equipment) || _listContains(value.toLowerCase() ,item.sets) || (item.name.toLowerCase().contains(value.toLowerCase())) )));
+                    }
+                  });
+                },
+              );
+            }
+            else {
+              return Card(
+                child: ListTile(
+                  leading: FlutterLogo(),
+                  title: Text(DateFormat("MM/dd/yyyy").format( _filteredSessions[index-1].date) + " " + _filteredSessions[index-1].name),
+                  // subtitle: Text( DateFormat("HH:mm").format(DateTime(5, 5, 5).add(_sessions[index].dur))),
+                  // _printDuration(_sessions[index].dur) + '\n' + 
+                  subtitle: Text(_printDuration(_filteredSessions[index-1].dur) + '\n' + "Equipment: " + _filteredSessions[index-1].equipment.join(", ") + '\n' + "Sets: " + _filteredSessions[index-1].sets.join(", ")),
+                  trailing: Icon(Icons.more_vert),
+                ),
+              );
+            }
           }
         ),
-
-        // child: ListView(
-        //   children: const <Widget>[
-        //     Card(child: ListTile(title: Text('One-line ListTile'))),
-        //     Card(
-        //       child: ListTile(
-        //         leading: FlutterLogo(),
-        //         title: Text('One-line with leading widget'),
-        //       ),
-        //     ),
-        //     Card(
-        //       child: ListTile(
-        //         title: Text('One-line with trailing widget'),
-        //         trailing: Icon(Icons.more_vert),
-        //       ),
-        //     ),
-        //     Card(
-        //       child: ListTile(
-        //         leading: FlutterLogo(),
-        //         title: Text('One-line with both widgets'),
-        //         trailing: Icon(Icons.more_vert),
-        //       ),
-        //     ),
-        //     Card(
-        //       child: ListTile(
-        //         title: Text('One-line dense ListTile'),
-        //         dense: true,
-        //       ),
-        //     ),
-        //     Card(
-        //       child: ListTile(
-        //         leading: FlutterLogo(size: 56.0),
-        //         title: Text('Two-line ListTile'),
-        //         subtitle: Text('Here is a second line'),
-        //         trailing: Icon(Icons.more_vert),
-        //       ),
-        //     ),
-        //     Card(
-        //       child: ListTile(
-        //         leading: FlutterLogo(size: 72.0),
-        //         title: Text('Three-line ListTile'),
-        //         subtitle: Text(
-        //           'A sufficiently long subtitle warrants three lines.'
-        //         ),
-        //         trailing: Icon(Icons.more_vert),
-        //         isThreeLine: true,
-        //       ),
-        //     ),
-        //   ],
-        // ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addSession,
