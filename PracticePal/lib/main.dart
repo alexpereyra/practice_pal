@@ -155,9 +155,6 @@ class _MyHomePageState extends State<MyHomePage> {
   // Callback for "plus" button
   void _addSession() async {
     Session newSession = new Session(name:null, date: new DateTime.now(), equipment: _tags, sets: List<String>(), dur: Duration(minutes: 10));
-    final _formKey = GlobalKey<FormState>();
-    final _formKey2 = GlobalKey<FormState>();
-    final _formKey3 = GlobalKey<FormState>();
     
     await showDialog(
     context: context,
@@ -182,7 +179,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
               // Session duration
               CupertinoTimerPicker (
-                key: _formKey3,
                 mode: CupertinoTimerPickerMode.hm,
                 minuteInterval: 5,
                 initialTimerDuration: new Duration(minutes: 10),
@@ -368,10 +364,234 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addSession,
+        onPressed: () {
+
+          //_addSession;
+
+          _navigateAndDisplaySelection(context);
+          _searchController.clear();
+          setState(() {
+            _filteredSessions = _sessions;
+          });
+          
+        },
         tooltip: 'Add Session',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  _navigateAndDisplaySelection(BuildContext context) async {
+    // Navigator.push returns a Future that completes after calling
+    // Navigator.pop on the Selection Screen.
+    final Session result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ManualAddScreen("Test", this)),
+    );
+    //return result;
+  }
+}
+
+
+class ManualAddScreen extends StatefulWidget {
+  final String title;
+  //final List<Session> sessions;
+  _MyHomePageState parent;
+
+  ManualAddScreen(this.title, this.parent);
+
+  @override
+  _ManualAddScreenState createState() => _ManualAddScreenState();
+}
+
+class _ManualAddScreenState extends State<ManualAddScreen> {
+ 
+  TextEditingController _nameController;
+  TextEditingController _equipTagController;
+  TextEditingController _setTagController;
+  TextEditingController _dateController;
+  TextEditingController _hourController;
+  TextEditingController _minuteController;
+
+  FocusNode equipFocusNode;
+  FocusNode setFocusNode;
+
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _equipTagController = TextEditingController();
+    _setTagController = TextEditingController();
+    _dateController = TextEditingController();
+    _hourController = TextEditingController();
+    _minuteController = TextEditingController();
+  }
+
+  void dispose() {
+    _nameController.dispose();
+    _equipTagController.dispose();
+    _setTagController.dispose();
+    _dateController.dispose();
+    _hourController.dispose();
+    _minuteController.dispose();
+    super.dispose();
+  }
+
+  // Build the list tags using Chip widgets
+  List<Widget> buildChips(tags) {
+    List<Widget> chips = new List();
+    for (var i = 0; i < tags.length; i++) {
+      Chip tagChip = Chip(
+        label: Text(tags[i]),
+        onDeleted: () {
+          tags.removeAt(i);
+          setState(() {
+            tags = tags;
+          });
+        },
+      );
+      chips.add(tagChip);
+    }
+    return chips;
+  }
+  
+  Session newSession = new Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: ListView(
+          padding: const EdgeInsets.all(8),
+          children: <Widget>[
+
+              // Date picker
+              // TODO: make this a pop-up or actually update on change
+              InputDatePickerFormField (
+                firstDate: new DateTime(0),
+                lastDate: new DateTime.now(),
+                initialDate: new DateTime.now(),
+                onDateSubmitted: (date) {
+                  newSession.date = date;
+                },
+              ),
+
+              // Session duration
+              CupertinoTimerPicker (
+                mode: CupertinoTimerPickerMode.hm,
+                minuteInterval: 5,
+                initialTimerDuration: new Duration(minutes: 10),
+                onTimerDurationChanged: (valuechanged) {
+                  newSession.dur = valuechanged;
+                },
+              ),
+
+              // Optional session name
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter optional session name',
+                ),
+              ),
+
+              // Equipment tag text field
+              TextField(
+                controller: _equipTagController,
+                focusNode: equipFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Enter Equipment',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                         newSession.equipment.add(_equipTagController.text);
+                      });
+                      _equipTagController.clear();
+                      equipFocusNode.requestFocus();
+                    },
+                    icon: Icon(Icons.add_circle_outlined),
+                  ),
+                ),
+                onEditingComplete: () {
+                  setState(() {
+                    newSession.equipment.add(_equipTagController.text);
+                  });
+                  _equipTagController.clear();
+                  equipFocusNode.requestFocus();
+                },
+              ),
+
+              // Equipment tag chip display
+              Wrap(
+                spacing: 4.0, // gap between adjacent chips
+                runSpacing: 2.0, // gap between lines
+                children: buildChips(newSession.equipment),
+                
+              ),
+              
+              // Text field for sets
+              TextField(
+                controller: _setTagController,
+                focusNode: setFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Enter Sets',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                         newSession.sets.add(_setTagController.text);
+                      });
+                      _setTagController.clear();
+                      setFocusNode.requestFocus();
+                    },
+                    icon: Icon(Icons.add_circle_outlined),
+                  ),
+                ),
+                onEditingComplete: () {
+                  setState(() {
+                    newSession.sets.add(_setTagController.text);
+                  });
+                  _setTagController.clear();
+                  setFocusNode.requestFocus();
+                },
+              ),
+
+              // Sets tag chip display
+              Wrap(
+                spacing: 4.0, // gap between adjacent chips
+                runSpacing: 2.0, // gap between lines
+                children: buildChips(newSession.sets),
+                
+              ),
+
+              // Submit button
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    String session_name;
+                    if (_nameController.text.isEmpty) {
+                      session_name = "Fitness Session";
+                    }
+                    else {
+                      session_name = _nameController.text;
+                    }
+                    // add session to datebase
+                    widget.parent.setState(() {
+                      widget.parent._sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
+                    });
+                    //widget.searchController.clear();
+                    newSession = Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
+                    Navigator.pop(context);
+                  },
+                  child: Text('Submit'),
+                ),
+              ),
+            ],
+        ),
+      ),
     );
   }
 }
