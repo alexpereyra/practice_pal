@@ -70,7 +70,6 @@ class Session {
   }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
 
   // initialize database
   // make a copy in _filteredSessions because I'm bad at this
@@ -80,39 +79,17 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Session> _filteredSessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
                                       Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
                                       Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
-  List<String> _tags = <String>["fitness"];
 
   // Text editing controllers for all text fields
-  TextEditingController _nameController;
-  TextEditingController _equipTagController;
-  TextEditingController _setTagController;
   TextEditingController _searchController;
-  TextEditingController _dateController;
-  TextEditingController _hourController;
-  TextEditingController _minuteController;
-
-  FocusNode equipFocusNode;
-  FocusNode setFocusNode;
 
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _equipTagController = TextEditingController();
-    _setTagController = TextEditingController();
     _searchController = TextEditingController();
-    _dateController = TextEditingController();
-    _hourController = TextEditingController();
-    _minuteController = TextEditingController();
   }
 
   void dispose() {
-    _nameController.dispose();
-    _equipTagController.dispose();
-    _setTagController.dispose();
     _searchController.dispose();
-    _dateController.dispose();
-    _hourController.dispose();
-    _minuteController.dispose();
     super.dispose();
   }
 
@@ -120,24 +97,6 @@ class _MyHomePageState extends State<MyHomePage> {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     return "${twoDigits(duration.inHours)} hrs $twoDigitMinutes min";
-  }
-
-  // Build the list tags using Chip widgets
-  List<Widget> buildChips(tags) {
-    List<Widget> chips = new List();
-    for (var i = 0; i < tags.length; i++) {
-      Chip tagChip = Chip(
-        label: Text(tags[i]),
-        onDeleted: () {
-          tags.removeAt(i);
-          setState(() {
-            tags = tags;
-          });
-        },
-      );
-      chips.add(tagChip);
-    }
-    return chips;
   }
 
   // search a list of strings
@@ -214,21 +173,50 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         ),
       ),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        child: Container(
+          height: 50.0,
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async{
 
           //_addSession;
-
-          _navigateAndDisplaySelection(context);
-          _searchController.clear();
-          setState(() {
-            _filteredSessions = _sessions;
-          });
-          
+          switch (await showDialog<int>(
+            context: context,
+            builder: (BuildContext context) {
+              return SimpleDialog(
+                title: const Text('Select option'),
+                children: <Widget>[
+                  SimpleDialogOption(
+                    onPressed: () { Navigator.pop(context, 0); },
+                    child: const Text('Start Session Now'),
+                  ),
+                  SimpleDialogOption(
+                    onPressed: () { Navigator.pop(context, 1); },
+                    child: const Text('Add Previous Session'),
+                  ),
+                ],
+              );
+            }
+          )) {
+            case 0:
+              // Start new session
+            break;
+            case 1:
+              _navigateAndDisplaySelection(context);
+              _searchController.clear();
+              setState(() {
+                _filteredSessions = _sessions;
+              });
+            break;
+          }
         },
         tooltip: 'Add Session',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -243,6 +231,23 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+// Build the list tags using Chip widgets
+List<Widget> buildChips(widget, tags) {
+  List<Widget> chips = new List();
+  for (var i = 0; i < tags.length; i++) {
+    Chip tagChip = Chip(
+      label: Text(tags[i]),
+      onDeleted: () {
+        tags.removeAt(i);
+        widget.setState(() {
+          tags = tags;
+        });
+      },
+    );
+    chips.add(tagChip);
+  }
+  return chips;
+}
 
 class ManualAddScreen extends StatefulWidget {
   final String title;
@@ -287,24 +292,6 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
     super.dispose();
   }
 
-  // Build the list tags using Chip widgets
-  List<Widget> buildChips(tags) {
-    List<Widget> chips = new List();
-    for (var i = 0; i < tags.length; i++) {
-      Chip tagChip = Chip(
-        label: Text(tags[i]),
-        onDeleted: () {
-          tags.removeAt(i);
-          setState(() {
-            tags = tags;
-          });
-        },
-      );
-      chips.add(tagChip);
-    }
-    return chips;
-  }
-  
   Session newSession = new Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
 
   @override
@@ -379,7 +366,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
               Wrap(
                 spacing: 4.0, // gap between adjacent chips
                 runSpacing: 2.0, // gap between lines
-                children: buildChips(newSession.equipment),
+                children: buildChips(this, newSession.equipment),
                 
               ),
               
@@ -413,7 +400,7 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
               Wrap(
                 spacing: 4.0, // gap between adjacent chips
                 runSpacing: 2.0, // gap between lines
-                children: buildChips(newSession.sets),
+                children: buildChips(this, newSession.sets),
                 
               ),
 
