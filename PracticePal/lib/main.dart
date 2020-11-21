@@ -249,6 +249,37 @@ List<Widget> buildChips(widget, tags) {
   return chips;
 }
 
+// Build common tag widget textbox and chips
+Widget buildTagEntry(widget, controller, focusNode, hintString, tagList) {
+  return TextField(
+    controller: controller,
+    focusNode: focusNode,
+    decoration: InputDecoration(
+      hintText: hintString,
+      suffixIcon: IconButton(
+        onPressed: () {
+          widget.setState(() {
+              tagList.add(controller.text);
+          });
+          controller.clear();
+          focusNode.requestFocus();
+        },
+        icon: Icon(Icons.add_circle_outlined),
+      ),
+    ),
+    onEditingComplete: () {
+      widget.setState(() {
+        tagList.add(controller.text);
+      });
+      controller.clear();
+      focusNode.requestFocus();
+    },
+  );
+}
+
+// Build submit button
+
+
 class ManualAddScreen extends StatefulWidget {
   final String title;
   //final List<Session> sessions;
@@ -307,127 +338,79 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
           padding: const EdgeInsets.all(8),
           children: <Widget>[
 
-              // Date picker
-              // TODO: make this a pop-up or actually update on change
-              InputDatePickerFormField (
-                firstDate: new DateTime(0),
-                lastDate: new DateTime.now(),
-                initialDate: new DateTime.now(),
-                onDateSubmitted: (date) {
-                  newSession.date = date;
-                },
-              ),
+            // Date picker
+            // TODO: make this a pop-up or actually update on change
+            InputDatePickerFormField (
+              firstDate: new DateTime(0),
+              lastDate: new DateTime.now(),
+              initialDate: new DateTime.now(),
+              onDateSubmitted: (date) {
+                newSession.date = date;
+              },
+            ),
 
-              // Session duration
-              CupertinoTimerPicker (
-                mode: CupertinoTimerPickerMode.hm,
-                minuteInterval: 5,
-                initialTimerDuration: new Duration(minutes: 10),
-                onTimerDurationChanged: (valuechanged) {
-                  newSession.dur = valuechanged;
-                },
-              ),
+            // Session duration
+            CupertinoTimerPicker (
+              mode: CupertinoTimerPickerMode.hm,
+              minuteInterval: 5,
+              initialTimerDuration: new Duration(minutes: 10),
+              onTimerDurationChanged: (valuechanged) {
+                newSession.dur = valuechanged;
+              },
+            ),
 
-              // Optional session name
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  hintText: 'Enter optional session name',
-                ),
+            // Optional session name
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                hintText: 'Enter optional session name',
               ),
+            ),
 
-              // Equipment tag text field
-              TextField(
-                controller: _equipTagController,
-                focusNode: equipFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Enter Equipment',
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                         newSession.equipment.add(_equipTagController.text);
-                      });
-                      _equipTagController.clear();
-                      equipFocusNode.requestFocus();
-                    },
-                    icon: Icon(Icons.add_circle_outlined),
-                  ),
-                ),
-                onEditingComplete: () {
-                  setState(() {
-                    newSession.equipment.add(_equipTagController.text);
+            // Equipment tag entry text field
+            buildTagEntry(this, _equipTagController, equipFocusNode, 'Enter Equipment', newSession.equipment),
+
+            // Equipment tag chip display
+            Wrap(
+              spacing: 4.0, // gap between adjacent chips
+              runSpacing: 2.0, // gap between lines
+              children: buildChips(this, newSession.equipment),
+            ),
+            
+            // Text field for sets
+            buildTagEntry(this, _setTagController, setFocusNode, 'Enter Sets', newSession.sets),
+
+            // Sets tag chip display
+            Wrap(
+              spacing: 4.0, // gap between adjacent chips
+              runSpacing: 2.0, // gap between lines
+              children: buildChips(this, newSession.sets),
+            ),
+
+            // Submit button
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  String session_name;
+                  if (_nameController.text.isEmpty) {
+                    session_name = "Fitness Session";
+                  }
+                  else {
+                    session_name = _nameController.text;
+                  }
+                  // add session to datebase
+                  widget.parent.setState(() {
+                    widget.parent._sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
                   });
-                  _equipTagController.clear();
-                  equipFocusNode.requestFocus();
+                  //widget.searchController.clear();
+                  newSession = Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
+                  Navigator.pop(context);
                 },
+                child: Text('Submit'),
               ),
-
-              // Equipment tag chip display
-              Wrap(
-                spacing: 4.0, // gap between adjacent chips
-                runSpacing: 2.0, // gap between lines
-                children: buildChips(this, newSession.equipment),
-                
-              ),
-              
-              // Text field for sets
-              TextField(
-                controller: _setTagController,
-                focusNode: setFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Enter Sets',
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                         newSession.sets.add(_setTagController.text);
-                      });
-                      _setTagController.clear();
-                      setFocusNode.requestFocus();
-                    },
-                    icon: Icon(Icons.add_circle_outlined),
-                  ),
-                ),
-                onEditingComplete: () {
-                  setState(() {
-                    newSession.sets.add(_setTagController.text);
-                  });
-                  _setTagController.clear();
-                  setFocusNode.requestFocus();
-                },
-              ),
-
-              // Sets tag chip display
-              Wrap(
-                spacing: 4.0, // gap between adjacent chips
-                runSpacing: 2.0, // gap between lines
-                children: buildChips(this, newSession.sets),
-                
-              ),
-
-              // Submit button
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    String session_name;
-                    if (_nameController.text.isEmpty) {
-                      session_name = "Fitness Session";
-                    }
-                    else {
-                      session_name = _nameController.text;
-                    }
-                    // add session to datebase
-                    widget.parent.setState(() {
-                      widget.parent._sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
-                    });
-                    //widget.searchController.clear();
-                    newSession = Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
-                    Navigator.pop(context);
-                  },
-                  child: Text('Submit'),
-                ),
-              ),
-            ],
+            ),
+          ],
         ),
       ),
     );
