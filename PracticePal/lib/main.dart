@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -52,39 +53,123 @@ class MyHomePage extends StatefulWidget {
 }
 
 class Session {
-    Session({
-      this.name,
-      this.date,
-      this.dur,
-      this.equipment,
-      this.sets,
-      // this.hasVideo = false,
-    });
+  Session({
+    this.name,
+    this.date,
+    this.dur,
+    this.equipment,
+    this.sets,
+    this.key,
+    // this.hasVideo = false,
+  });
 
-    String name;
-    DateTime date;
-    Duration dur;
-    List<String> equipment;
-    List<String> sets;
-    // bool hasVideo;
+  String name;
+  DateTime date;
+  Duration dur;
+  List<String> equipment;
+  List<String> sets;
+  Key key;
+  // bool hasVideo;
+}
+
+// Initialize displayed session list
+List<Session> initSessionList() {
+  
+  // Fetch database here
+  // constant list for now
+  List<Session> sessions =  <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"],           sets: List<String>(),  dur: new Duration(hours:0, minutes:5), key: Key("a")),
+                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5), key: Key("b")),
+                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"],   sets: List<String>(),  dur: new Duration(hours:0, minutes:5), key: Key("c"))];
+
+  return sessions;
+}
+
+// add newSession to database
+void addSession(sessions, newSession) {
+
+  bool updateDBSuccess = true;
+
+  // insert session at the top of the list (index 0)
+  if (updateDBSuccess) {
+    sessions.insert(0,newSession);
   }
+
+}
+
+Widget slideRightBackground() {
+  return Container(
+    color: Colors.green,
+    margin: const EdgeInsets.all(4),
+    child: Align(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 20,
+          ),
+          Icon(
+            Icons.edit,
+            color: Colors.white,
+          ),
+          Text(
+            " Edit",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.left,
+          ),
+        ],
+      ),
+      alignment: Alignment.centerLeft,
+    ),
+  );
+}
+
+Widget slideLeftBackground() {
+  return Container(
+    color: Colors.red,
+    margin: const EdgeInsets.all(4),
+    child: Align(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Icon(
+            Icons.delete,
+            color: Colors.white,
+          ),
+          Text(
+            " Delete",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.right,
+          ),
+          SizedBox(
+            width: 20,
+          ),
+        ],
+      ),
+      alignment: Alignment.centerRight,
+    ),
+  );
+}
 
 class _MyHomePageState extends State<MyHomePage> {
 
-  // initialize database
-  // make a copy in _filteredSessions because I'm bad at this
-  List<Session> _sessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
-  List<Session> _filteredSessions = <Session>[Session(name: "Sweet gainz",          date: new DateTime.utc(2020, 10, 18),  equipment: <String>["Pants"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Pumpin' Uranium",      date: new DateTime.utc(2020, 9, 22),   equipment: <String>["Shirt","Weights"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5)),
-                                      Session(name: "Something else funny", date: new DateTime.utc(2020, 7, 2),    equipment: <String>["Shirt","Shoes"], sets: List<String>(),  dur: new Duration(hours:0, minutes:5))];
+
+  List<Session> _sessions;
+  List<Session> _filteredSessions;
 
   // Text editing controllers for all text fields
   TextEditingController _searchController;
 
   void initState() {
     super.initState();
+    // initialize list of sessions
+    _sessions = initSessionList();
+    _filteredSessions = _sessions;
     _searchController = TextEditingController();
   }
 
@@ -161,12 +246,54 @@ class _MyHomePageState extends State<MyHomePage> {
             // List of sessions as Cards, filtered based on Search
             // [index -1] is because index 0 is the search bar (dumb way to build the widget list, oh well)
             else {
-              return Card(
-                child: ListTile(
-                  leading: FlutterLogo(),
-                  title: Text(DateFormat("MM/dd/yyyy").format( _filteredSessions[index-1].date) + " " + _filteredSessions[index-1].name),
-                  subtitle: Text(_printDuration(_filteredSessions[index-1].dur) + '\n' + "Equipment: " + _filteredSessions[index-1].equipment.join(", ") + '\n' + "Sets: " + _filteredSessions[index-1].sets.join(", ")),
-                  trailing: Icon(Icons.more_vert),
+              return Dismissible(
+                key: _filteredSessions[index-1].key,
+                onDismissed: (direction) {
+                  setState(() {
+                    // delete Session
+                    _sessions.remove(_filteredSessions[index-1]);
+                  });
+                  Scaffold.of(context).showSnackBar(SnackBar(content: Text("Session removed")));
+                },
+                background: slideRightBackground(),
+                secondaryBackground: slideLeftBackground(),
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.endToStart) {
+                    return await showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text("Confirm"),
+                          content: const Text("Are you sure you want to delete this session?"),
+                          actions: <Widget>[
+                            FlatButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text("DELETE")
+                            ),
+                            FlatButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text("CANCEL"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                  else {
+                    _navigateAndDisplaySelection(context, _filteredSessions[index-1]);
+                    _searchController.clear();
+                    setState(() {
+                      _filteredSessions = _sessions;
+                    });
+                  }
+                },
+                child: Card(
+                  child: ListTile(
+                    leading: FlutterLogo(),
+                    title: Text(DateFormat("MM/dd/yyyy").format( _filteredSessions[index-1].date) + " " + _filteredSessions[index-1].name),
+                    subtitle: Text(_printDuration(_filteredSessions[index-1].dur) + '\n' + "Equipment: " + _filteredSessions[index-1].equipment.join(", ") + '\n' + "Sets: " + _filteredSessions[index-1].sets.join(", ")),
+                    trailing: Icon(Icons.more_vert),
+                  ),
                 ),
               );
             }
@@ -220,12 +347,17 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  _navigateAndDisplaySelection(BuildContext context) async {
+  _navigateAndDisplaySelection(BuildContext context, [Session session = null]) async {
     // Navigator.push returns a Future that completes after calling
     // Navigator.pop on the Selection Screen.
+
+    // ?? and ??= will only happen if session is null, or not given
+    bool editingSession = (session != null);
+    session ??= new Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10), key: UniqueKey());
+
     final Session result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ManualAddScreen("Add New Session", this)),
+      MaterialPageRoute(builder: (context) => ManualAddScreen(this, "Add New Session", session, editingSession)),
     );
     //return result;
   }
@@ -281,11 +413,11 @@ Widget buildTagEntry(widget, controller, focusNode, hintString, tagList) {
 
 
 class ManualAddScreen extends StatefulWidget {
-  final String title;
-  //final List<Session> sessions;
   _MyHomePageState parent;
-
-  ManualAddScreen(this.title, this.parent);
+  final String title;
+  Session session;
+  bool editingSession;
+  ManualAddScreen(this.parent, this.title, this.session, this.editingSession);
 
   @override
   _ManualAddScreenState createState() => _ManualAddScreenState();
@@ -297,11 +429,11 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
   TextEditingController _equipTagController;
   TextEditingController _setTagController;
   TextEditingController _dateController;
-  TextEditingController _hourController;
-  TextEditingController _minuteController;
 
   FocusNode equipFocusNode;
   FocusNode setFocusNode;
+
+  // Session newSession;
 
   void initState() {
     super.initState();
@@ -309,8 +441,9 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
     _equipTagController = TextEditingController();
     _setTagController = TextEditingController();
     _dateController = TextEditingController();
-    _hourController = TextEditingController();
-    _minuteController = TextEditingController();
+    // newSession = new Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10), key: UniqueKey());
+
+    _nameController.text = widget.session.name;
   }
 
   void dispose() {
@@ -318,12 +451,8 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
     _equipTagController.dispose();
     _setTagController.dispose();
     _dateController.dispose();
-    _hourController.dispose();
-    _minuteController.dispose();
     super.dispose();
   }
-
-  Session newSession = new Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
 
   @override
   Widget build(BuildContext context) {
@@ -345,17 +474,17 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
               lastDate: new DateTime.now(),
               initialDate: new DateTime.now(),
               onDateSubmitted: (date) {
-                newSession.date = date;
+                widget.session.date = date;
               },
             ),
 
             // Session duration
             CupertinoTimerPicker (
               mode: CupertinoTimerPickerMode.hm,
-              minuteInterval: 5,
+              minuteInterval: 1,
               initialTimerDuration: new Duration(minutes: 10),
               onTimerDurationChanged: (valuechanged) {
-                newSession.dur = valuechanged;
+                widget.session.dur = valuechanged;
               },
             ),
 
@@ -368,23 +497,23 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
             ),
 
             // Equipment tag entry text field
-            buildTagEntry(this, _equipTagController, equipFocusNode, 'Enter Equipment', newSession.equipment),
+            buildTagEntry(this, _equipTagController, equipFocusNode, 'Enter Equipment', widget.session.equipment),
 
             // Equipment tag chip display
             Wrap(
               spacing: 4.0, // gap between adjacent chips
               runSpacing: 2.0, // gap between lines
-              children: buildChips(this, newSession.equipment),
+              children: buildChips(this, widget.session.equipment),
             ),
             
             // Text field for sets
-            buildTagEntry(this, _setTagController, setFocusNode, 'Enter Sets', newSession.sets),
+            buildTagEntry(this, _setTagController, setFocusNode, 'Enter Sets', widget.session.sets),
 
             // Sets tag chip display
             Wrap(
               spacing: 4.0, // gap between adjacent chips
               runSpacing: 2.0, // gap between lines
-              children: buildChips(this, newSession.sets),
+              children: buildChips(this, widget.session.sets),
             ),
 
             // Submit button
@@ -392,19 +521,28 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: ElevatedButton(
                 onPressed: () {
-                  String session_name;
-                  if (_nameController.text.isEmpty) {
-                    session_name = "Fitness Session";
+                  print(widget.editingSession);
+                  if (widget.editingSession) {
+                    // edit session in database
+                    widget.parent.setState(() {
+                      widget.session = widget.session;
+                    });
                   }
+
                   else {
-                    session_name = _nameController.text;
+                    // if no name is entered, use default
+                    if (_nameController.text.isEmpty) {
+                      widget.session.name = "Fitness Session";
+                    }
+                    else {
+                      widget.session.name = _nameController.text;
+                    }
+
+                    // add session to database and displayed list
+                    widget.parent.setState(() {
+                      addSession(widget.parent._sessions, widget.session);
+                    });
                   }
-                  // add session to datebase
-                  widget.parent.setState(() {
-                    widget.parent._sessions.insert(0,Session(name: session_name, date: newSession.date, dur:newSession.dur, equipment: newSession.equipment, sets: newSession.sets));
-                  });
-                  //widget.searchController.clear();
-                  newSession = Session(name:null, date: new DateTime.now(), equipment: <String>["fitness"], sets: List<String>(), dur: Duration(minutes: 10));
                   Navigator.pop(context);
                 },
                 child: Text('Submit'),
