@@ -522,10 +522,19 @@ class _ManualAddScreenState extends State<ManualAddScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   print(widget.editingSession);
+
+                  // editing existing session
                   if (widget.editingSession) {
-                    // edit session in database
+                    // if no name is entered, use default
+                    if (_nameController.text.isEmpty) {
+                      widget.session.name = "Fitness Session";
+                    }
+                    else {
+                      widget.session.name = _nameController.text;
+                    }
+
                     widget.parent.setState(() {
-                      widget.session = widget.session;
+                      widget.parent._sessions = widget.parent._sessions;
                     });
                   }
 
